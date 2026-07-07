@@ -1,10 +1,9 @@
 import { motion } from 'motion/react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useStore } from '../store'
-import { emptyMeeting, AGENDA_TYPE_LABELS } from '../types'
+import { emptyMeeting } from '../types'
 import type { Meeting } from '../types'
-import { readiness, readinessLabel, totalMinutes } from '../readiness'
-import { Page, ScoreRing, EmptyState, PlusIcon, PlayIcon, ClockIcon, SparkIcon, SaveIndicator } from '../components/ui'
+import { Page, EmptyState, PlusIcon, EyeIcon, SparkIcon, SaveIndicator } from '../components/ui'
 
 const listStagger = {
   hidden: {},
@@ -24,30 +23,21 @@ function fmtDate(iso: string): string {
 }
 
 function MeetingCard({ m }: { m: Meeting }) {
-  const r = readiness(m)
   const shared = m.points.filter((p) => p.visibility === 'shared').length
   return (
     <motion.div variants={listItem}>
       <Link to={`/meeting/${m.id}`} className="bento bento-hover block p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <div className="mb-1 flex items-center gap-2 text-xs text-mist-500">
-              <span>{fmtDate(m.date)}</span>
-              <span className="tnum">{m.time}</span>
-              {m.status === 'closed' && <span className="chip !py-0.5 text-mint-400">مُغلق</span>}
-            </div>
-            <h3 className="truncate text-lg font-bold">{m.title || 'اجتماع بلا عنوان'}</h3>
-            {m.withWhom && <p className="mt-0.5 truncate text-sm text-mist-500">مع {m.withWhom}</p>}
-            <div className="mt-3 flex flex-wrap gap-2 text-xs text-mist-500">
-              <span className="chip">
-                <ClockIcon /> <span className="tnum">{totalMinutes(m)}</span> دقيقة
-              </span>
-              <span className="chip">
-                <span className="tnum">{m.points.length}</span> بنود · <span className="tnum">{shared}</span> مشتركة
-              </span>
-            </div>
-          </div>
-          <ScoreRing score={r.score} size={72} />
+        <div className="mb-1 flex items-center gap-2 text-xs text-mist-500">
+          <span>{fmtDate(m.date)}</span>
+          <span className="tnum">{m.time}</span>
+          {m.status === 'closed' && <span className="chip !py-0.5 text-mint-400">مُغلق</span>}
+        </div>
+        <h3 className="truncate text-lg font-bold">{m.title || 'اجتماع بلا عنوان'}</h3>
+        {m.withWhom && <p className="mt-0.5 truncate text-sm text-mist-500">مع {m.withWhom}</p>}
+        <div className="mt-3 flex flex-wrap gap-2 text-xs text-mist-500">
+          <span className="chip">
+            <span className="tnum">{m.points.length}</span> بنود · <span className="tnum">{shared}</span> في الرابط
+          </span>
         </div>
       </Link>
     </motion.div>
@@ -63,7 +53,6 @@ export default function Dashboard() {
   const upcoming = meetings.filter((m) => m.date > todayIso && m.status !== 'closed').sort((a, b) => a.date.localeCompare(b.date))
   const past = meetings.filter((m) => m.date < todayIso || m.status === 'closed')
   const next = today[0] ?? upcoming[0]
-  const nextR = next ? readiness(next) : null
 
   function createMeeting() {
     const m = emptyMeeting()
@@ -79,7 +68,7 @@ export default function Dashboard() {
             {new Intl.DateTimeFormat('ar', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())}
           </p>
           <h1 className="mt-1 text-3xl font-bold sm:text-4xl">
-            <span className="grad-text">جاهز؟</span>
+            <span className="grad-text">MeetHamza</span>
           </h1>
         </div>
         <SaveIndicator />
@@ -89,32 +78,27 @@ export default function Dashboard() {
       <motion.div variants={listStagger} initial="hidden" animate="show" className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <motion.div variants={listItem} className="bento p-5 sm:col-span-2">
           {next ? (
-            <div className="flex h-full items-center justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-wide text-violet-400">الاجتماع القادم</p>
-                <h2 className="mt-1 truncate text-xl font-bold sm:text-2xl">{next.title || 'اجتماع بلا عنوان'}</h2>
-                <p className="mt-1 text-sm text-mist-500">
-                  {fmtDate(next.date)} · <span className="tnum">{next.time}</span>
-                  {next.withWhom && <> · مع {next.withWhom}</>}
-                </p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Link to={`/meeting/${next.id}`} className="btn btn-primary">
-                    تجهيز الاجتماع
-                  </Link>
-                  <Link to={`/meeting/${next.id}/present`} className="btn btn-ghost">
-                    <PlayIcon /> وضع العرض
-                  </Link>
-                </div>
-              </div>
-              <div className="hidden shrink-0 flex-col items-center gap-1 sm:flex">
-                <ScoreRing score={nextR!.score} label={readinessLabel(nextR!.score)} />
+            <div className="flex h-full flex-col items-start justify-center gap-1">
+              <p className="text-xs font-semibold uppercase tracking-wide text-violet-400">الاجتماع القادم</p>
+              <h2 className="mt-1 truncate text-xl font-bold sm:text-2xl">{next.title || 'اجتماع بلا عنوان'}</h2>
+              <p className="mt-1 text-sm text-mist-500">
+                {fmtDate(next.date)} · <span className="tnum">{next.time}</span>
+                {next.withWhom && <> · مع {next.withWhom}</>}
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link to={`/meeting/${next.id}`} className="btn btn-primary">
+                  تجهيز الاجتماع
+                </Link>
+                <Link to={`/meeting/${next.id}/preview`} className="btn btn-ghost">
+                  <EyeIcon /> معاينة الرابط
+                </Link>
               </div>
             </div>
           ) : (
             <div className="flex h-full flex-col items-start justify-center gap-3 py-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-violet-400">ابدأ هنا</p>
               <h2 className="text-xl font-bold sm:text-2xl">حضّر اجتماعك الأول</h2>
-              <p className="text-sm text-mist-500">أجندة واضحة، نقاط حديث، ورابط مشاركة أنيق — كل شيء في مكان واحد.</p>
+              <p className="text-sm text-mist-500">بنود واضحة تكتبها في ثوانٍ، ورابط مشاركة أنيق يراه الطرف الآخر.</p>
               <button onClick={createMeeting} className="btn btn-primary">
                 <PlusIcon /> اجتماع جديد
               </button>
@@ -123,25 +107,17 @@ export default function Dashboard() {
         </motion.div>
 
         <motion.div variants={listItem} className="bento flex flex-col justify-between p-5">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-cyan-400">
-              <SparkIcon /> إجراءات سريعة
-            </p>
-          </div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-cyan-400">
+            <SparkIcon /> إجراءات سريعة
+          </p>
           <div className="mt-4 flex flex-col gap-2">
             <button onClick={createMeeting} className="btn btn-primary w-full">
               <PlusIcon /> اجتماع جديد
             </button>
-            {next && (
-              <Link to={`/meeting/${next.id}/preview`} className="btn btn-ghost w-full">
-                معاينة رابط المشاركة
-              </Link>
-            )}
           </div>
         </motion.div>
       </motion.div>
 
-      {/* Today */}
       {today.length > 0 && (
         <section className="mb-8">
           <h2 className="mb-3 text-sm font-bold text-mist-300">اجتماعات اليوم</h2>
@@ -153,7 +129,6 @@ export default function Dashboard() {
         </section>
       )}
 
-      {/* Upcoming */}
       {upcoming.length > 0 && (
         <section className="mb-8">
           <h2 className="mb-3 text-sm font-bold text-mist-300">القادمة</h2>
@@ -165,7 +140,6 @@ export default function Dashboard() {
         </section>
       )}
 
-      {/* Past / closed */}
       {past.length > 0 && (
         <section>
           <h2 className="mb-3 text-sm font-bold text-mist-300">السابقة</h2>
@@ -181,13 +155,9 @@ export default function Dashboard() {
         <EmptyState
           icon="📋"
           title="لا توجد اجتماعات بعد"
-          hint="أنشئ اجتماعك الأول وابدأ بإضافة بنود جدول الأعمال."
+          hint="أنشئ اجتماعك الأول واكتب بنوده في ثوانٍ."
         />
       )}
-
-      <footer className="mt-12 text-center text-xs text-mist-600">
-        {Object.values(AGENDA_TYPE_LABELS).join(' · ')} — حضّر أقل، أنجز أكثر
-      </footer>
     </Page>
   )
 }

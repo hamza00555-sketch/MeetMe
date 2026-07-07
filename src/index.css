@@ -23,11 +23,6 @@
 }
 
 :root {
-  --c-discussion: #38e1ff;
-  --c-decision: #ffc25c;
-  --c-update: #9d8cff;
-  --c-brainstorm: #ff6b8b;
-  --c-review: #4ce0b3;
   --glass: color-mix(in srgb, white 4%, transparent);
   --glass-border: color-mix(in srgb, white 8%, transparent);
   color-scheme: dark;
@@ -147,6 +142,20 @@ body {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+/* Shared-agenda list numbers: light up as the progress line reaches them */
+.share-num {
+  background: var(--color-ink-800);
+  border: 1px solid var(--glass-border);
+  color: var(--color-mist-500);
+  transition: background 0.45s ease, color 0.45s ease, border-color 0.45s ease, box-shadow 0.45s ease;
+}
+.share-num.is-active {
+  background: linear-gradient(130deg, var(--color-violet-500), #4aa8ff);
+  border-color: transparent;
+  color: white;
+  box-shadow: 0 6px 20px -6px color-mix(in srgb, var(--color-violet-500) 70%, transparent);
 }
 
 /* Thin custom scrollbars */

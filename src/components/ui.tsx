@@ -1,4 +1,4 @@
-import { motion, useReducedMotion } from 'motion/react'
+import { motion } from 'motion/react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useStore } from '../store'
@@ -45,41 +45,6 @@ export function TopBar({ title, back, actions }: { title: ReactNode; back?: stri
       <SaveIndicator />
       {actions}
     </header>
-  )
-}
-
-/** Animated circular readiness score. */
-export function ScoreRing({ score, size = 96, label }: { score: number; size?: number; label?: string }) {
-  const reduce = useReducedMotion()
-  const stroke = size >= 90 ? 8 : 6
-  const r = (size - stroke) / 2
-  const c = 2 * Math.PI * r
-  const hue = score >= 85 ? 'var(--color-mint-400)' : score >= 60 ? 'var(--color-cyan-400)' : score >= 30 ? 'var(--color-amber-400)' : 'var(--color-rose-400)'
-  return (
-    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90" aria-hidden>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--glass-border)" strokeWidth={stroke} />
-        <motion.circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke={hue}
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={c}
-          initial={{ strokeDashoffset: c }}
-          animate={{ strokeDashoffset: c - (c * score) / 100 }}
-          transition={reduce ? { duration: 0 } : { duration: 1.1, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="tnum text-lg font-bold leading-none" style={{ color: hue }}>
-          {score}
-        </span>
-        {label && <span className="mt-1 text-[10px] text-mist-500">{label}</span>}
-      </div>
-    </div>
   )
 }
 
@@ -150,14 +115,6 @@ export function LinkIcon() {
   )
 }
 
-export function PlayIcon() {
-  return (
-    <Svg className="rtl:-scale-x-100">
-      <polygon points="6 3 20 12 6 21 6 3" fill="currentColor" stroke="none" />
-    </Svg>
-  )
-}
-
 export function CheckIcon() {
   return (
     <Svg>
@@ -189,28 +146,10 @@ export function GripIcon() {
   )
 }
 
-export function ClockIcon() {
-  return (
-    <Svg>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l3 2" />
-    </Svg>
-  )
-}
-
 export function SparkIcon() {
   return (
     <Svg>
       <path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l2.5 2.5M16.5 16.5 19 19M19 5l-2.5 2.5M7.5 16.5 5 19" />
-    </Svg>
-  )
-}
-
-export function CopyIcon() {
-  return (
-    <Svg>
-      <rect x="9" y="9" width="12" height="12" rx="2" />
-      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
     </Svg>
   )
 }

@@ -7,7 +7,7 @@ import type { Meeting, SharePayload } from './types'
  */
 export function buildSharePayload(m: Meeting): SharePayload {
   return {
-    v: 1,
+    v: 2,
     title: m.title,
     withWhom: m.withWhom,
     date: m.date,
@@ -19,11 +19,7 @@ export function buildSharePayload(m: Meeting): SharePayload {
       .filter((p) => p.visibility === 'shared')
       .map((p) => ({
         title: p.title,
-        type: p.type,
-        goal: p.goal,
-        talkingPoints: p.talkingPoints.filter((t) => t.trim()),
-        expectedOutcome: p.expectedOutcome,
-        timeEstimate: p.timeEstimate,
+        details: p.details,
       })),
   }
 }
@@ -51,7 +47,7 @@ export function shareUrl(m: Meeting): string {
 export function decodeSharePayload(encoded: string): SharePayload | null {
   try {
     const parsed = JSON.parse(decodeB64Url(encoded))
-    if (parsed && parsed.v === 1 && Array.isArray(parsed.points)) return parsed as SharePayload
+    if (parsed && parsed.v === 2 && Array.isArray(parsed.points)) return parsed as SharePayload
     return null
   } catch {
     return null

@@ -1,13 +1,12 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { AnimatePresence, motion, Reorder } from 'motion/react'
+import { AnimatePresence, Reorder } from 'motion/react'
 import { useStore } from '../store'
-import { emptyPoint } from './../types'
+import { newPoint } from '../types'
 import type { AgendaPoint, Meeting } from '../types'
-import { readiness, readinessLabel, totalMinutes } from '../readiness'
 import { shareUrl } from '../share'
 import AgendaEditorCard from '../components/AgendaEditorCard'
-import { Page, TopBar, ScoreRing, PlusIcon, PlayIcon, LinkIcon, EyeIcon, CheckIcon, ClockIcon } from '../components/ui'
+import { Page, TopBar, PlusIcon, LinkIcon, EyeIcon, CheckIcon } from '../components/ui'
 
 export default function MeetingBuilder() {
   const { id } = useParams()
@@ -15,6 +14,8 @@ export default function MeetingBuilder() {
   const { getMeeting, updateMeeting, deleteMeeting } = useStore()
   const meeting = getMeeting(id!)
   const [copied, setCopied] = useState(false)
+  const [draft, setDraft] = useState('')
+  const quickAddRef = useRef<HTMLInputElement>(null)
 
   if (!meeting) {
     return (
@@ -25,8 +26,8 @@ export default function MeetingBuilder() {
     )
   }
 
-  const r = readiness(meeting)
   const patch = (p: Partial<Meeting>) => updateMeeting(meeting.id, p)
+  const sharedCount = meeting.points.filter((p) => p.visibility === 'shared').length
 
   function patchPoint(pointId: string, p: Partial<AgendaPoint>) {
     updateMeeting(meeting!.id, (m) => ({
@@ -35,8 +36,12 @@ export default function MeetingBuilder() {
     }))
   }
 
-  function addPoint() {
-    updateMeeting(meeting!.id, (m) => ({ ...m, points: [...m.points, emptyPoint()] }))
+  function quickAdd() {
+    const title = draft.trim()
+    if (!title) return
+    updateMeeting(meeting!.id, (m) => ({ ...m, points: [...m.points, newPoint(title)] }))
+    setDraft('')
+    quickAddRef.current?.focus()
   }
 
   async function copyShareLink() {
@@ -45,7 +50,6 @@ export default function MeetingBuilder() {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      // clipboard unavailable — preview page offers the link too
       navigate(`/meeting/${meeting!.id}/preview`)
     }
   }
@@ -56,38 +60,15 @@ export default function MeetingBuilder() {
         title={meeting.title || 'اجتماع جديد'}
         back="/"
         actions={
-          <div className="flex gap-2">
-            <Link to={`/meeting/${meeting.id}/present`} className="btn btn-primary max-sm:!px-3" title="وضع العرض">
-              <PlayIcon /> <span className="max-sm:hidden">عرض</span>
-            </Link>
-          </div>
+          <Link to={`/meeting/${meeting.id}/preview`} className="btn btn-primary max-sm:!px-3">
+            <EyeIcon /> <span className="max-sm:hidden">معاينة المشاركة</span>
+          </Link>
         }
       />
 
       <div className="grid gap-4 lg:grid-cols-3">
-        {/* Details + readiness column */}
+        {/* Details column */}
         <div className="flex flex-col gap-4 lg:order-2">
-          <div className="bento flex items-center gap-4 p-5">
-            <ScoreRing score={r.score} label={readinessLabel(r.score)} />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold">جاهزية الاجتماع</p>
-              <ul className="mt-1.5 flex flex-col gap-1 text-xs text-mist-500">
-                {r.hints.length === 0 ? (
-                  <li className="flex items-center gap-1.5 text-mint-400">
-                    <CheckIcon /> كل شيء جاهز، بالتوفيق!
-                  </li>
-                ) : (
-                  r.hints.map((h) => (
-                    <li key={h} className="flex items-start gap-1.5">
-                      <span className="mt-1.5 size-1 shrink-0 rounded-full bg-amber-400" />
-                      {h}
-                    </li>
-                  ))
-                )}
-              </ul>
-            </div>
-          </div>
-
           <div className="bento flex flex-col gap-3 p-5">
             <label>
               <span className="mb-1 block text-xs font-semibold text-mist-500">عنوان الاجتماع</span>
@@ -113,11 +94,11 @@ export default function MeetingBuilder() {
             </label>
             <label>
               <span className="mb-1 block text-xs font-semibold text-mist-500">الهدف الرئيسي</span>
-              <textarea className="field min-h-16 resize-y" value={meeting.objective} onChange={(e) => patch({ objective: e.target.value })} placeholder="ما القرار أو النتيجة الأهم من هذا الاجتماع؟" />
+              <textarea className="field min-h-16 resize-y" value={meeting.objective} onChange={(e) => patch({ objective: e.target.value })} placeholder="ما أهم نتيجة تريدها من هذا الاجتماع؟" />
             </label>
             <label>
               <span className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-cyan-400">
-                <EyeIcon /> ملاحظات مشتركة — تظهر في رابط المشاركة
+                <EyeIcon /> ملاحظة مشتركة — تظهر في رابط المشاركة
               </span>
               <textarea className="field min-h-16 resize-y" value={meeting.sharedNotes} onChange={(e) => patch({ sharedNotes: e.target.value })} placeholder="سياق أو تمهيد يراه الطرف الآخر" />
             </label>
@@ -125,14 +106,11 @@ export default function MeetingBuilder() {
 
           <div className="bento flex flex-col gap-2 p-5">
             <p className="mb-1 text-xs font-semibold text-mist-500">المشاركة والمتابعة</p>
-            <Link to={`/meeting/${meeting.id}/preview`} className="btn btn-ghost w-full">
-              <EyeIcon /> معاينة ما سيراه الآخرون
-            </Link>
-            <button onClick={copyShareLink} className="btn btn-ghost w-full">
+            <button onClick={copyShareLink} className="btn btn-primary w-full">
               {copied ? <CheckIcon /> : <LinkIcon />} {copied ? 'تم نسخ الرابط!' : 'نسخ رابط المشاركة'}
             </button>
             <Link to={`/meeting/${meeting.id}/close`} className="btn btn-ghost w-full">
-              <CheckIcon /> إغلاق الاجتماع وتسجيل النتائج
+              <CheckIcon /> ما بعد الاجتماع
             </Link>
             <button
               className="btn btn-danger mt-2 w-full"
@@ -151,23 +129,37 @@ export default function MeetingBuilder() {
         {/* Agenda column */}
         <div className="lg:order-1 lg:col-span-2">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-bold text-mist-300">جدول الأعمال</h2>
-            <span className="chip">
-              <ClockIcon /> المجموع <span className="tnum">{totalMinutes(meeting)}</span> دقيقة
-            </span>
+            <h2 className="text-sm font-bold text-mist-300">بنود الاجتماع</h2>
+            {meeting.points.length > 0 && (
+              <span className="chip">
+                <span className="tnum">{meeting.points.length}</span> بنود · <span className="tnum">{sharedCount}</span> في الرابط
+              </span>
+            )}
           </div>
 
-          {meeting.points.length === 0 && (
-            <div className="bento mb-4 p-8 text-center text-sm text-mist-500">
-              ابدأ بإضافة أول بند — حدد نوعه وهدفه ونقاط الحديث، وقرر إن كان خاصًا أو مشتركًا.
-            </div>
-          )}
+          {/* Quick add */}
+          <div className="bento mb-3 flex items-center gap-2 p-2 ps-4">
+            <span className="text-violet-400">
+              <PlusIcon />
+            </span>
+            <input
+              ref={quickAddRef}
+              className="min-w-0 flex-1 bg-transparent py-2 outline-none placeholder:text-mist-600"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && quickAdd()}
+              placeholder="اكتب بندًا واضغط Enter…"
+            />
+            <button className="btn btn-ghost !py-1.5 text-xs" onClick={quickAdd} disabled={!draft.trim()}>
+              إضافة
+            </button>
+          </div>
 
           <Reorder.Group
             axis="y"
             values={meeting.points}
             onReorder={(points) => patch({ points })}
-            className="flex flex-col gap-3"
+            className="flex flex-col gap-2.5"
           >
             <AnimatePresence initial={false}>
               {meeting.points.map((p, i) => (
@@ -182,13 +174,11 @@ export default function MeetingBuilder() {
             </AnimatePresence>
           </Reorder.Group>
 
-          <motion.button
-            layout
-            onClick={addPoint}
-            className="btn btn-ghost mt-4 w-full border-dashed !border-white/15 py-4"
-          >
-            <PlusIcon /> إضافة بند جديد
-          </motion.button>
+          {meeting.points.length === 0 && (
+            <div className="bento p-8 text-center text-sm text-mist-500">
+              اكتب بنود اجتماعك فوق، بندًا بندًا — وحدد أي البنود تبقى خاصة لك وأيها تُشارك.
+            </div>
+          )}
         </div>
       </div>
     </Page>

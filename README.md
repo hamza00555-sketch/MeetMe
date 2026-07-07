@@ -1,22 +1,21 @@
-# جاهز — MeetMe
+# MeetHamza
 
-تطبيق ويب عصري لتحضير الاجتماعات: أجندة واضحة، نقاط حديث، ملاحظات خاصة ومشتركة، رابط مشاركة أنيق، ووضع عرض أثناء الاجتماع.
+تطبيق ويب بسيط وأنيق لتحضير الاجتماعات: تكتب بنود اجتماعك كسطور سريعة، تحدد الخاص والمشترك منها، وترسل رابطًا أنيقًا يعرضها كقائمة متحركة للطرف الآخر.
 
-A premium, Arabic-first (RTL) meeting-preparation web app.
+A simple, premium, Arabic-first (RTL) meeting-preparation web app.
 
-## Features (MVP)
+## Features
 
-- **Dashboard** — today's & upcoming meetings, readiness score, quick actions.
-- **Meeting Builder** — bento-style agenda cards with drag-and-drop ordering; each point has a title, type, goal, talking points, expected outcome, time estimate, and private/shared visibility. Changes auto-save to localStorage.
+- **Dashboard** — today's & upcoming meetings, quick actions.
+- **Meeting Builder** — todo-style quick add (type + Enter), drag-and-drop ordering; each point is just a title + optional details + a private/shared toggle. Changes auto-save to localStorage.
 - **Share Preview** — see exactly what the other party will see before sharing.
-- **Public Shared Agenda** — a cinematic, GSAP-animated agenda page. The share link *encodes only shared points into the URL itself*, so private notes can never leak — no backend required.
-- **Presentation Mode** — full-screen deck with keyboard navigation, elapsed timer vs. time budget, and your private notes visible only to you.
-- **Close Meeting** — mark each point's outcome, record decisions, convert points into action items, add follow-up notes.
+- **Public Shared Agenda** — a premium animated *list*: SplitText word-by-word title reveal, a progress line drawn alongside the list as you scroll, per-item reveals, Lenis smooth scrolling. The share link *encodes only shared points into the URL itself*, so private points can never leak — no backend required.
+- **After the meeting** — check off covered points, add follow-up tasks, and a closing note.
 
 ## Design
 
 - Premium dark interface, bento cards, IBM Plex Sans Arabic typography.
-- Motion for React for UI animation; GSAP (+ScrollTrigger) for the cinematic shared page.
+- Motion for React for UI animation; GSAP (ScrollTrigger + SplitText) for the cinematic shared page.
 - Native RTL via logical CSS properties; `prefers-reduced-motion` respected everywhere.
 - Mobile-first responsive layout.
 
@@ -31,4 +30,4 @@ npm run preview # serve the build
 
 ## Stack
 
-Vite · React 19 · TypeScript · Tailwind CSS v4 · Motion for React · GSAP · React Router (hash routing so share links work on any static host).
+Vite · React 19 · TypeScript · Tailwind CSS v4 · Motion for React · GSAP 3.13+ · Lenis · React Router (hash routing so share links work on any static host).
