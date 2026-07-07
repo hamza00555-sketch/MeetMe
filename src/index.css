@@ -1,25 +1,26 @@
 @import 'tailwindcss';
 
+/* Spatial UI (visionOS) palette: deep space blues, icy glass, pastel signals */
 @theme {
   --font-sans: 'IBM Plex Sans Arabic', system-ui, sans-serif;
 
-  --color-ink-950: #07090f;
-  --color-ink-900: #0a0c12;
-  --color-ink-800: #10131c;
-  --color-ink-700: #171b27;
-  --color-ink-600: #232939;
+  --color-ink-950: #04060c;
+  --color-ink-900: #070a14;
+  --color-ink-800: #0e1424;
+  --color-ink-700: #161e34;
+  --color-ink-600: #2a3555;
 
-  --color-mist-100: #f2f4fa;
-  --color-mist-300: #c6cbd9;
-  --color-mist-500: #8b91a7;
-  --color-mist-600: #646a80;
+  --color-mist-100: #eef1fa;
+  --color-mist-300: #c3cade;
+  --color-mist-500: #8d96b2;
+  --color-mist-600: #626b88;
 
-  --color-violet-400: #9d8cff;
-  --color-violet-500: #7c5cff;
-  --color-cyan-400: #38e1ff;
-  --color-amber-400: #ffc25c;
-  --color-rose-400: #ff6b8b;
-  --color-mint-400: #4ce0b3;
+  --color-violet-400: #b9c8ff;
+  --color-violet-500: #8fa3ff;
+  --color-cyan-400: #7df0ff;
+  --color-amber-400: #ffd28f;
+  --color-rose-400: #ff8fa8;
+  --color-mint-400: #7fe8c8;
 }
 
 :root {
@@ -41,58 +42,70 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Ambient background glow layers */
+/* Spatial environment: a deep-space room with a soft horizon glow below */
 .app-bg {
   position: fixed;
   inset: 0;
   z-index: -1;
   background:
-    radial-gradient(60rem 40rem at 85% -10%, color-mix(in srgb, #7c5cff 14%, transparent), transparent 60%),
-    radial-gradient(50rem 35rem at -10% 110%, color-mix(in srgb, #38e1ff 9%, transparent), transparent 60%),
+    radial-gradient(85rem 55rem at 50% 128%, #1c2a4e 0%, rgba(28, 42, 78, 0.4) 45%, transparent 70%),
+    radial-gradient(55rem 35rem at 82% -15%, rgba(110, 140, 255, 0.12), transparent 60%),
+    radial-gradient(40rem 28rem at 8% 30%, rgba(125, 240, 255, 0.05), transparent 60%),
     var(--color-ink-900);
 }
 
+/* Floating glass pane with a specular top edge — the core visionOS surface */
 .bento {
-  background: linear-gradient(160deg, color-mix(in srgb, white 6%, transparent), color-mix(in srgb, white 2%, transparent));
-  border: 1px solid var(--glass-border);
-  border-radius: 1.25rem;
-  backdrop-filter: blur(14px);
-  box-shadow: 0 1px 0 color-mix(in srgb, white 6%, transparent) inset, 0 20px 40px -24px rgb(0 0 0 / 0.6);
+  background: linear-gradient(165deg, rgba(58, 72, 118, 0.42), rgba(24, 32, 58, 0.36));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 1.75rem;
+  backdrop-filter: blur(26px) saturate(1.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 0.5px rgba(255, 255, 255, 0.2),
+    0 30px 60px -28px rgb(0 0 0 / 0.85);
 }
 
 .bento-hover {
-  transition: border-color 0.3s ease, transform 0.3s ease;
+  transition: border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
 }
 .bento-hover:hover {
-  border-color: color-mix(in srgb, white 16%, transparent);
+  border-color: rgba(255, 255, 255, 0.26);
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.26),
+    0 40px 70px -30px rgb(0 0 0 / 0.9);
 }
 
 .field {
   width: 100%;
-  background: color-mix(in srgb, white 3%, transparent);
-  border: 1px solid var(--glass-border);
-  border-radius: 0.75rem;
-  padding: 0.625rem 0.875rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1rem;
+  padding: 0.625rem 0.95rem;
   color: var(--color-mist-100);
   font-size: 0.9rem;
-  transition: border-color 0.2s ease, background 0.2s ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 .field::placeholder {
   color: var(--color-mist-600);
 }
 .field:focus {
   outline: none;
-  border-color: color-mix(in srgb, var(--color-violet-500) 55%, transparent);
-  background: color-mix(in srgb, white 5%, transparent);
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.09);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 0 0 4px rgba(185, 200, 255, 0.12);
 }
 
+/* Capsule controls, visionOS-style */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border-radius: 0.75rem;
-  padding: 0.625rem 1.125rem;
+  border-radius: 999px;
+  padding: 0.65rem 1.25rem;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
@@ -105,24 +118,27 @@ body {
   transform: scale(0.97);
 }
 .btn-primary {
-  background: linear-gradient(120deg, var(--color-violet-500), #5a8bff);
-  color: white;
-  box-shadow: 0 10px 24px -10px color-mix(in srgb, var(--color-violet-500) 60%, transparent);
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--color-ink-800);
+  box-shadow: 0 14px 34px -14px rgba(170, 195, 255, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 .btn-primary:hover {
-  box-shadow: 0 14px 30px -10px color-mix(in srgb, var(--color-violet-500) 75%, transparent);
+  background: #ffffff;
+  box-shadow: 0 18px 40px -14px rgba(170, 195, 255, 0.75), inset 0 1px 0 #fff;
 }
 .btn-ghost {
-  background: color-mix(in srgb, white 4%, transparent);
-  border-color: var(--glass-border);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
   color: var(--color-mist-100);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 .btn-ghost:hover {
-  background: color-mix(in srgb, white 8%, transparent);
+  background: rgba(255, 255, 255, 0.14);
 }
 .btn-danger {
-  background: color-mix(in srgb, var(--color-rose-400) 14%, transparent);
+  background: color-mix(in srgb, var(--color-rose-400) 16%, transparent);
   color: var(--color-rose-400);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .chip {
@@ -130,15 +146,26 @@ body {
   align-items: center;
   gap: 0.375rem;
   border-radius: 999px;
-  padding: 0.25rem 0.75rem;
+  padding: 0.3rem 0.8rem;
   font-size: 0.75rem;
   font-weight: 600;
-  border: 1px solid var(--glass-border);
-  background: color-mix(in srgb, white 4%, transparent);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(8px);
+}
+
+/* Lightweight floating pane — for list items inside heavier glass contexts */
+.pane {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1.5rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(12px);
 }
 
 .grad-text {
-  background: linear-gradient(100deg, var(--color-mist-100) 30%, var(--color-violet-400) 70%, var(--color-cyan-400));
+  background: linear-gradient(100deg, #ffffff 30%, var(--color-violet-400) 72%, var(--color-cyan-400));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -146,16 +173,18 @@ body {
 
 /* Shared-agenda list numbers: light up as the progress line reaches them */
 .share-num {
-  background: var(--color-ink-800);
-  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   color: var(--color-mist-500);
+  backdrop-filter: blur(10px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
   transition: background 0.45s ease, color 0.45s ease, border-color 0.45s ease, box-shadow 0.45s ease;
 }
 .share-num.is-active {
-  background: linear-gradient(130deg, var(--color-violet-500), #4aa8ff);
+  background: rgba(255, 255, 255, 0.95);
   border-color: transparent;
-  color: white;
-  box-shadow: 0 6px 20px -6px color-mix(in srgb, var(--color-violet-500) 70%, transparent);
+  color: var(--color-ink-800);
+  box-shadow: 0 8px 26px -8px rgba(190, 210, 255, 0.75), inset 0 1px 0 #fff;
 }
 
 /* Thin custom scrollbars */

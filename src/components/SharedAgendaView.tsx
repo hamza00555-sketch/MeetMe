@@ -166,7 +166,7 @@ export default function SharedAgendaView({ payload, smoothScroll = false }: Prop
               <span data-num className="share-num tnum relative z-10 mt-0.5 grid size-10 shrink-0 place-items-center rounded-full text-sm font-bold">
                 {i + 1}
               </span>
-              <div data-item-body className="min-w-0 flex-1 pt-1.5">
+              <div data-item-body className="pane min-w-0 flex-1 px-5 py-4">
                 <h2 className="text-xl font-bold leading-snug sm:text-2xl">{p.title}</h2>
                 {p.details.trim() && (
                   <p className="mt-2 whitespace-pre-wrap text-[15px] leading-relaxed text-mist-300">{p.details}</p>
