@@ -79,6 +79,7 @@ body {
 
 .field {
   width: 100%;
+  min-width: 0;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 1rem;
@@ -96,6 +97,19 @@ body {
   border-color: rgba(255, 255, 255, 0.4);
   background: rgba(255, 255, 255, 0.09);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 0 0 4px rgba(185, 200, 255, 0.12);
+}
+
+/* iOS renders date/time inputs at an intrinsic width that overflows cards —
+   flatten them so they behave like normal fields */
+input[type='date'].field,
+input[type='time'].field {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  height: 2.7rem;
+}
+input.field::-webkit-date-and-time-value {
+  text-align: inherit;
 }
 
 /* Capsule controls, visionOS-style */

@@ -4,11 +4,11 @@ import { AnimatePresence, Reorder } from 'motion/react'
 import { useStore } from '../store'
 import { newPoint } from '../types'
 import type { AgendaPoint, Meeting } from '../types'
-import { createShortLink, longShareUrl, buildInviteMessage, getOrganizer, setOrganizer } from '../share'
+import { deliverInvite, getOrganizer, setOrganizer } from '../share'
 import AgendaEditorCard from '../components/AgendaEditorCard'
 import { Page, TopBar, PlusIcon, LinkIcon, EyeIcon, CheckIcon } from '../components/ui'
 
-type ShareKind = 'message' | 'link'
+type ShareState = 'idle' | 'busy' | 'done' | 'error'
 
 export default function MeetingBuilder() {
   const { id } = useParams()
@@ -17,9 +17,7 @@ export default function MeetingBuilder() {
   const meeting = getMeeting(id!)
   const [draft, setDraft] = useState('')
   const [organizer, setOrganizerState] = useState(getOrganizer)
-  const [busy, setBusy] = useState<ShareKind | null>(null)
-  const [copied, setCopied] = useState<ShareKind | null>(null)
-  const [usedFallback, setUsedFallback] = useState(false)
+  const [shareState, setShareState] = useState<ShareState>('idle')
   const quickAddRef = useRef<HTMLInputElement>(null)
 
   if (!meeting) {
@@ -49,30 +47,16 @@ export default function MeetingBuilder() {
     quickAddRef.current?.focus()
   }
 
-  async function share(kind: ShareKind) {
-    if (busy) return
-    setBusy(kind)
-    setCopied(null)
+  async function share() {
+    if (shareState === 'busy') return
+    setShareState('busy')
     try {
-      const short = await createShortLink(meeting!)
-      const url = short ?? longShareUrl(meeting!)
-      setUsedFallback(!short)
-      const text = kind === 'message' ? buildInviteMessage(meeting!, organizer, url) : url
-
-      // On touch devices prefer the native share sheet for the full message
-      if (kind === 'message' && navigator.share && matchMedia('(pointer: coarse)').matches) {
-        try {
-          await navigator.share({ text })
-          return
-        } catch {
-          // user dismissed the sheet or it failed — fall through to clipboard
-        }
-      }
-      await navigator.clipboard.writeText(text)
-      setCopied(kind)
-      setTimeout(() => setCopied(null), 2500)
-    } finally {
-      setBusy(null)
+      await deliverInvite(meeting!, organizer)
+      setShareState('done')
+      setTimeout(() => setShareState('idle'), 2500)
+    } catch {
+      setShareState('error')
+      setTimeout(() => setShareState('idle'), 4000)
     }
   }
 
@@ -91,7 +75,7 @@ export default function MeetingBuilder() {
       <div className="grid gap-4 lg:grid-cols-3 lg:grid-rows-[auto_1fr]">
         {/* 1 — Meeting details */}
         <div className="lg:col-start-3 lg:row-start-1">
-          <div className="bento flex flex-col gap-3 p-5">
+          <div className="bento flex flex-col gap-3 p-4 sm:p-5">
             <label>
               <span className="mb-1 block text-xs font-semibold text-mist-500">عنوان الاجتماع</span>
               <input className="field" value={meeting.title} onChange={(e) => patch({ title: e.target.value })} placeholder="مثال: مراجعة خطة التسويق" />
@@ -101,11 +85,11 @@ export default function MeetingBuilder() {
               <input className="field" value={meeting.withWhom} onChange={(e) => patch({ withWhom: e.target.value })} placeholder="أسماء الحضور" />
             </label>
             <div className="grid grid-cols-2 gap-3">
-              <label>
+              <label className="min-w-0">
                 <span className="mb-1 block text-xs font-semibold text-mist-500">التاريخ</span>
                 <input type="date" className="field tnum" value={meeting.date} onChange={(e) => patch({ date: e.target.value })} />
               </label>
-              <label>
+              <label className="min-w-0">
                 <span className="mb-1 block text-xs font-semibold text-mist-500">الوقت</span>
                 <input type="time" className="field tnum" value={meeting.time} onChange={(e) => patch({ time: e.target.value })} />
               </label>
@@ -178,7 +162,7 @@ export default function MeetingBuilder() {
 
         {/* 3 — Share (last) */}
         <div className="lg:col-start-3 lg:row-start-2">
-          <div className="bento flex flex-col gap-2 p-5">
+          <div className="bento flex flex-col gap-2 p-4 sm:p-5">
             <p className="mb-1 text-xs font-semibold text-mist-500">المشاركة</p>
             <label>
               <span className="mb-1 block text-xs font-semibold text-mist-500">اسمك في الدعوة</span>
@@ -192,17 +176,17 @@ export default function MeetingBuilder() {
                 placeholder="حمزة"
               />
             </label>
-            <button onClick={() => share('message')} className="btn btn-primary mt-1 w-full" disabled={busy !== null}>
-              {copied === 'message' ? <CheckIcon /> : <LinkIcon />}
-              {busy === 'message' ? 'يجهّز الدعوة…' : copied === 'message' ? 'تم نسخ رسالة الدعوة!' : 'نسخ رسالة الدعوة'}
+            <button onClick={share} className="btn btn-primary mt-1 w-full" disabled={shareState === 'busy'}>
+              {shareState === 'done' ? <CheckIcon /> : <LinkIcon />}
+              {shareState === 'busy'
+                ? 'يجهّز الدعوة…'
+                : shareState === 'done'
+                  ? 'تمت مشاركة الدعوة!'
+                  : 'مشاركة الدعوة'}
             </button>
-            <button onClick={() => share('link')} className="btn btn-ghost w-full" disabled={busy !== null}>
-              {copied === 'link' ? <CheckIcon /> : <LinkIcon />}
-              {busy === 'link' ? 'يجهّز الرابط…' : copied === 'link' ? 'تم نسخ الرابط!' : 'نسخ الرابط فقط'}
-            </button>
-            {usedFallback && (
-              <p className="text-[11px] leading-relaxed text-amber-400/90">
-                تعذّر إنشاء رابط قصير (النسخة المحلية) — استخدمنا رابطًا طويلًا بديلًا يعمل بنفس الشكل.
+            {shareState === 'error' && (
+              <p className="text-[11.5px] leading-relaxed text-rose-400">
+                تعذّر إنشاء رابط الدعوة — تحقق من اتصالك بالإنترنت وحاول مرة أخرى.
               </p>
             )}
             <div className="mt-3 flex flex-col gap-2 border-t border-white/5 pt-3">

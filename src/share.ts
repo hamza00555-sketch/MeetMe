@@ -24,25 +24,12 @@ export function buildSharePayload(m: Meeting): SharePayload {
   }
 }
 
-// base64url over UTF-8 so Arabic text survives the round-trip.
-function encodeB64Url(s: string): string {
-  const bytes = new TextEncoder().encode(s)
-  let bin = ''
-  bytes.forEach((b) => (bin += String.fromCharCode(b)))
-  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-}
-
+// base64url over UTF-8 — kept so old self-contained links keep opening.
 function decodeB64Url(s: string): string {
   const b64 = s.replace(/-/g, '+').replace(/_/g, '/')
   const bin = atob(b64)
   const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0))
   return new TextDecoder().decode(bytes)
-}
-
-/** Long self-contained link — offline fallback when the share API is unreachable. */
-export function longShareUrl(m: Meeting): string {
-  const payload = encodeB64Url(JSON.stringify(buildSharePayload(m)))
-  return `${location.origin}/share/${payload}`
 }
 
 export function decodeSharePayload(encoded: string): SharePayload | null {
@@ -86,6 +73,40 @@ export async function fetchSharePayload(id: string): Promise<SharePayload | null
   } catch {
     return null
   }
+}
+
+/**
+ * Creates the short link and hands the invite message to the native share
+ * sheet (touch devices) or the clipboard. On iOS Safari the clipboard must be
+ * written inside the original tap gesture, so we pass a *promise* into
+ * ClipboardItem instead of awaiting the network first.
+ * Resolves to how it was delivered; rejects if the link couldn't be created.
+ */
+export async function deliverInvite(m: Meeting, organizer: string): Promise<'shared' | 'copied'> {
+  const textPromise = createShortLink(m).then((url) => {
+    if (!url) throw new Error('short-link-failed')
+    return buildInviteMessage(m, organizer, url)
+  })
+
+  if (typeof navigator.share === 'function' && matchMedia('(pointer: coarse)').matches) {
+    try {
+      await navigator.share({ text: await textPromise })
+      return 'shared'
+    } catch (e) {
+      if ((e as DOMException)?.name === 'AbortError') return 'shared' // user closed the sheet
+      await textPromise // if the link itself failed, surface that error instead
+      // share unsupported/failed with a valid link — fall through to clipboard
+    }
+  }
+
+  if (typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write) {
+    await navigator.clipboard.write([
+      new ClipboardItem({ 'text/plain': textPromise.then((t) => new Blob([t], { type: 'text/plain' })) }),
+    ])
+  } else {
+    await navigator.clipboard.writeText(await textPromise)
+  }
+  return 'copied'
 }
 
 /* ---- Organizer profile (local, personal app) ---- */

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useStore } from '../store'
-import { buildSharePayload, buildInviteMessage, createShortLink, longShareUrl, getOrganizer } from '../share'
+import { buildSharePayload, deliverInvite, getOrganizer } from '../share'
 import SharedAgendaView from '../components/SharedAgendaView'
 import { Page, TopBar, LinkIcon, CheckIcon, LockIcon } from '../components/ui'
 
@@ -9,8 +9,7 @@ export default function SharePreview() {
   const { id } = useParams()
   const { getMeeting } = useStore()
   const meeting = getMeeting(id!)
-  const [busy, setBusy] = useState(false)
-  const [copied, setCopied] = useState(false)
+  const [state, setState] = useState<'idle' | 'busy' | 'done' | 'error'>('idle')
 
   if (!meeting) {
     return (
@@ -24,16 +23,15 @@ export default function SharePreview() {
   const hiddenCount = meeting.points.length - payload.points.length
 
   async function copyInvite() {
-    if (busy) return
-    setBusy(true)
+    if (state === 'busy') return
+    setState('busy')
     try {
-      const short = await createShortLink(meeting!)
-      const url = short ?? longShareUrl(meeting!)
-      await navigator.clipboard.writeText(buildInviteMessage(meeting!, getOrganizer(), url))
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2500)
-    } finally {
-      setBusy(false)
+      await deliverInvite(meeting!, getOrganizer())
+      setState('done')
+      setTimeout(() => setState('idle'), 2500)
+    } catch {
+      setState('error')
+      setTimeout(() => setState('idle'), 4000)
     }
   }
 
@@ -44,8 +42,9 @@ export default function SharePreview() {
           title="معاينة ما سيراه الآخرون"
           back={`/meeting/${meeting.id}`}
           actions={
-            <button onClick={copyInvite} className="btn btn-primary" disabled={busy}>
-              {copied ? <CheckIcon /> : <LinkIcon />} {busy ? 'يجهّز الدعوة…' : copied ? 'تم النسخ!' : 'نسخ رسالة الدعوة'}
+            <button onClick={copyInvite} className="btn btn-primary" disabled={state === 'busy'}>
+              {state === 'done' ? <CheckIcon /> : <LinkIcon />}
+              {state === 'busy' ? 'يجهّز الدعوة…' : state === 'done' ? 'تمت المشاركة!' : state === 'error' ? 'تعذّر الاتصال — أعد المحاولة' : 'مشاركة الدعوة'}
             </button>
           }
         />

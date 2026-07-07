@@ -43,17 +43,22 @@ export default function SharedAgendaView({ payload, smoothScroll = false }: Prop
     // Smooth scrolling, wired into ScrollTrigger's clock
     let lenis: Lenis | null = null
     let raf: ((time: number) => void) | null = null
-    if (smoothScroll && !reduce) {
-      lenis = new Lenis({ duration: 1.1 })
-      lenis.on('scroll', ScrollTrigger.update)
-      raf = (time: number) => lenis!.raf(time * 1000)
-      gsap.ticker.add(raf)
-      gsap.ticker.lagSmoothing(0)
+    try {
+      if (smoothScroll && !reduce) {
+        lenis = new Lenis({ duration: 1.1 })
+        lenis.on('scroll', ScrollTrigger.update)
+        raf = (time: number) => lenis!.raf(time * 1000)
+        gsap.ticker.add(raf)
+        gsap.ticker.lagSmoothing(0)
+      }
+    } catch {
+      lenis = null
     }
 
     const ctx = gsap.context(() => {
       const mm = gsap.matchMedia()
       mm.add('(prefers-reduced-motion: no-preference)', () => {
+        try {
         // Hero: cinematic staged entrance
         const title = root.current!.querySelector('[data-hero-title]')
         const split = title ? new SplitText(title, { type: 'words' }) : null
@@ -109,6 +114,16 @@ export default function SharedAgendaView({ payload, smoothScroll = false }: Prop
         })
 
         return () => split?.revert()
+        } catch {
+          // An animation failure must never hide the agenda — undo any
+          // partially-applied tween state and show everything as-is.
+          try {
+            gsap.set(root.current!.querySelectorAll('[data-hero-kicker],[data-hero-title],[data-hero-meta] > *,[data-hero-obj],[data-hero-hint],[data-item-body],[data-progress],[data-agenda-foot]'), { clearProps: 'all' })
+          } catch {
+            /* leave the DOM untouched */
+          }
+          return undefined
+        }
       })
       return () => mm.revert()
     }, root)

@@ -1,9 +1,42 @@
-import { useEffect, useState } from 'react'
+import { Component, useEffect, useState } from 'react'
+import type { ReactNode } from 'react'
 import { useParams } from 'react-router-dom'
 import { motion } from 'motion/react'
 import type { SharePayload } from '../types'
 import { decodeSharePayload, fetchSharePayload } from '../share'
 import SharedAgendaView from '../components/SharedAgendaView'
+
+/** If the animated view ever crashes, show the agenda as a plain list instead of a blank page. */
+class ViewBoundary extends Component<{ payload: SharePayload; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false }
+  static getDerivedStateFromError() {
+    return { failed: true }
+  }
+  render() {
+    if (!this.state.failed) return this.props.children
+    const p = this.props.payload
+    return (
+      <main className="mx-auto max-w-2xl px-6 py-16">
+        <h1 className="text-3xl font-bold">{p.title || 'جدول أعمال الاجتماع'}</h1>
+        <p className="mt-2 text-mist-500">
+          {p.withWhom && <>مع {p.withWhom} · </>}
+          {p.date} · <span className="tnum">{p.time}</span>
+        </p>
+        {p.objective && <p className="mt-4 text-mist-300">{p.objective}</p>}
+        <ol className="mt-8 flex flex-col gap-4">
+          {p.points.map((pt, i) => (
+            <li key={i} className="pane p-4">
+              <span className="font-bold">
+                {i + 1}. {pt.title}
+              </span>
+              {pt.details.trim() && <p className="mt-1 whitespace-pre-wrap text-sm text-mist-300">{pt.details}</p>}
+            </li>
+          ))}
+        </ol>
+      </main>
+    )
+  }
+}
 
 type State = { status: 'loading' } | { status: 'error' } | { status: 'ready'; data: SharePayload }
 
@@ -57,8 +90,10 @@ export default function PublicAgenda() {
   }
 
   return (
-    <motion.main initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
-      <SharedAgendaView payload={state.data} smoothScroll />
-    </motion.main>
+    <ViewBoundary payload={state.data}>
+      <motion.main initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
+        <SharedAgendaView payload={state.data} smoothScroll />
+      </motion.main>
+    </ViewBoundary>
   )
 }
