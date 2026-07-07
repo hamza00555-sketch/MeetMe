@@ -17,6 +17,7 @@ export default function App() {
           <Route path="/meeting/:id" element={<MeetingBuilder />} />
           <Route path="/meeting/:id/preview" element={<SharePreview />} />
           <Route path="/meeting/:id/close" element={<CloseMeeting />} />
+          <Route path="/s/:id" element={<PublicAgenda />} />
           <Route path="/share/:payload" element={<PublicAgenda />} />
         </Routes>
       </AnimatePresence>

@@ -4,17 +4,22 @@ import { AnimatePresence, Reorder } from 'motion/react'
 import { useStore } from '../store'
 import { newPoint } from '../types'
 import type { AgendaPoint, Meeting } from '../types'
-import { shareUrl } from '../share'
+import { createShortLink, longShareUrl, buildInviteMessage, getOrganizer, setOrganizer } from '../share'
 import AgendaEditorCard from '../components/AgendaEditorCard'
 import { Page, TopBar, PlusIcon, LinkIcon, EyeIcon, CheckIcon } from '../components/ui'
+
+type ShareKind = 'message' | 'link'
 
 export default function MeetingBuilder() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { getMeeting, updateMeeting, deleteMeeting } = useStore()
   const meeting = getMeeting(id!)
-  const [copied, setCopied] = useState(false)
   const [draft, setDraft] = useState('')
+  const [organizer, setOrganizerState] = useState(getOrganizer)
+  const [busy, setBusy] = useState<ShareKind | null>(null)
+  const [copied, setCopied] = useState<ShareKind | null>(null)
+  const [usedFallback, setUsedFallback] = useState(false)
   const quickAddRef = useRef<HTMLInputElement>(null)
 
   if (!meeting) {
@@ -44,13 +49,30 @@ export default function MeetingBuilder() {
     quickAddRef.current?.focus()
   }
 
-  async function copyShareLink() {
+  async function share(kind: ShareKind) {
+    if (busy) return
+    setBusy(kind)
+    setCopied(null)
     try {
-      await navigator.clipboard.writeText(shareUrl(meeting!))
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch {
-      navigate(`/meeting/${meeting!.id}/preview`)
+      const short = await createShortLink(meeting!)
+      const url = short ?? longShareUrl(meeting!)
+      setUsedFallback(!short)
+      const text = kind === 'message' ? buildInviteMessage(meeting!, organizer, url) : url
+
+      // On touch devices prefer the native share sheet for the full message
+      if (kind === 'message' && navigator.share && matchMedia('(pointer: coarse)').matches) {
+        try {
+          await navigator.share({ text })
+          return
+        } catch {
+          // user dismissed the sheet or it failed — fall through to clipboard
+        }
+      }
+      await navigator.clipboard.writeText(text)
+      setCopied(kind)
+      setTimeout(() => setCopied(null), 2500)
+    } finally {
+      setBusy(null)
     }
   }
 
@@ -60,15 +82,15 @@ export default function MeetingBuilder() {
         title={meeting.title || 'اجتماع جديد'}
         back="/"
         actions={
-          <Link to={`/meeting/${meeting.id}/preview`} className="btn btn-primary max-sm:!px-3">
-            <EyeIcon /> <span className="max-sm:hidden">معاينة المشاركة</span>
+          <Link to={`/meeting/${meeting.id}/preview`} className="btn btn-ghost max-sm:!px-3">
+            <EyeIcon /> <span className="max-sm:hidden">معاينة ما سيراه الآخرون</span>
           </Link>
         }
       />
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        {/* Details column */}
-        <div className="flex flex-col gap-4 lg:order-2">
+      <div className="grid gap-4 lg:grid-cols-3 lg:grid-rows-[auto_1fr]">
+        {/* 1 — Meeting details */}
+        <div className="lg:col-start-3 lg:row-start-1">
           <div className="bento flex flex-col gap-3 p-5">
             <label>
               <span className="mb-1 block text-xs font-semibold text-mist-500">عنوان الاجتماع</span>
@@ -96,43 +118,16 @@ export default function MeetingBuilder() {
               <span className="mb-1 block text-xs font-semibold text-mist-500">الهدف الرئيسي</span>
               <textarea className="field min-h-16 resize-y" value={meeting.objective} onChange={(e) => patch({ objective: e.target.value })} placeholder="ما أهم نتيجة تريدها من هذا الاجتماع؟" />
             </label>
-            <label>
-              <span className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-cyan-400">
-                <EyeIcon /> ملاحظة مشتركة — تظهر في رابط المشاركة
-              </span>
-              <textarea className="field min-h-16 resize-y" value={meeting.sharedNotes} onChange={(e) => patch({ sharedNotes: e.target.value })} placeholder="سياق أو تمهيد يراه الطرف الآخر" />
-            </label>
-          </div>
-
-          <div className="bento flex flex-col gap-2 p-5">
-            <p className="mb-1 text-xs font-semibold text-mist-500">المشاركة والمتابعة</p>
-            <button onClick={copyShareLink} className="btn btn-primary w-full">
-              {copied ? <CheckIcon /> : <LinkIcon />} {copied ? 'تم نسخ الرابط!' : 'نسخ رابط المشاركة'}
-            </button>
-            <Link to={`/meeting/${meeting.id}/close`} className="btn btn-ghost w-full">
-              <CheckIcon /> ما بعد الاجتماع
-            </Link>
-            <button
-              className="btn btn-danger mt-2 w-full"
-              onClick={() => {
-                if (confirm('حذف هذا الاجتماع نهائيًا؟')) {
-                  deleteMeeting(meeting.id)
-                  navigate('/')
-                }
-              }}
-            >
-              حذف الاجتماع
-            </button>
           </div>
         </div>
 
-        {/* Agenda column */}
-        <div className="lg:order-1 lg:col-span-2">
+        {/* 2 — Agenda points */}
+        <div className="lg:col-span-2 lg:col-start-1 lg:row-span-2 lg:row-start-1">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-bold text-mist-300">بنود الاجتماع</h2>
             {meeting.points.length > 0 && (
               <span className="chip">
-                <span className="tnum">{meeting.points.length}</span> بنود · <span className="tnum">{sharedCount}</span> في الرابط
+                <span className="tnum">{meeting.points.length}</span> بنود · <span className="tnum">{sharedCount}</span> في الدعوة
               </span>
             )}
           </div>
@@ -179,6 +174,54 @@ export default function MeetingBuilder() {
               اكتب بنود اجتماعك فوق، بندًا بندًا — وحدد أي البنود تبقى خاصة لك وأيها تُشارك.
             </div>
           )}
+        </div>
+
+        {/* 3 — Share (last) */}
+        <div className="lg:col-start-3 lg:row-start-2">
+          <div className="bento flex flex-col gap-2 p-5">
+            <p className="mb-1 text-xs font-semibold text-mist-500">المشاركة</p>
+            <label>
+              <span className="mb-1 block text-xs font-semibold text-mist-500">اسمك في الدعوة</span>
+              <input
+                className="field"
+                value={organizer}
+                onChange={(e) => {
+                  setOrganizerState(e.target.value)
+                  setOrganizer(e.target.value)
+                }}
+                placeholder="حمزة"
+              />
+            </label>
+            <button onClick={() => share('message')} className="btn btn-primary mt-1 w-full" disabled={busy !== null}>
+              {copied === 'message' ? <CheckIcon /> : <LinkIcon />}
+              {busy === 'message' ? 'يجهّز الدعوة…' : copied === 'message' ? 'تم نسخ رسالة الدعوة!' : 'نسخ رسالة الدعوة'}
+            </button>
+            <button onClick={() => share('link')} className="btn btn-ghost w-full" disabled={busy !== null}>
+              {copied === 'link' ? <CheckIcon /> : <LinkIcon />}
+              {busy === 'link' ? 'يجهّز الرابط…' : copied === 'link' ? 'تم نسخ الرابط!' : 'نسخ الرابط فقط'}
+            </button>
+            {usedFallback && (
+              <p className="text-[11px] leading-relaxed text-amber-400/90">
+                تعذّر إنشاء رابط قصير (النسخة المحلية) — استخدمنا رابطًا طويلًا بديلًا يعمل بنفس الشكل.
+              </p>
+            )}
+            <div className="mt-3 flex flex-col gap-2 border-t border-white/5 pt-3">
+              <Link to={`/meeting/${meeting.id}/close`} className="btn btn-ghost w-full">
+                <CheckIcon /> ما بعد الاجتماع
+              </Link>
+              <button
+                className="btn btn-danger w-full"
+                onClick={() => {
+                  if (confirm('حذف هذا الاجتماع نهائيًا؟')) {
+                    deleteMeeting(meeting.id)
+                    navigate('/')
+                  }
+                }}
+              >
+                حذف الاجتماع
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </Page>
