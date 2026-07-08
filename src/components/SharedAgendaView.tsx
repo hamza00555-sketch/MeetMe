@@ -200,7 +200,7 @@ export default function SharedAgendaView({ payload, smoothScroll = false }: Prop
             <p className="mx-auto mb-8 max-w-xl text-pretty text-sm leading-relaxed text-mist-300">{payload.sharedNotes}</p>
           )}
           <p className="text-xs text-mist-600">
-            أُعدّ هذا الجدول بعناية عبر <span className="grad-text font-bold">MeetHamza</span>
+            أُعدّ هذا الجدول بعناية عبر <span className="grad-text font-bold">لقاء</span>
           </p>
         </footer>
       </section>
