@@ -70,7 +70,7 @@ export default function PublicAgenda() {
           animate={{ opacity: 1 }}
           className="flex flex-col items-center gap-4 text-mist-500"
         >
-          <span className="size-8 animate-spin rounded-full border-2 border-violet-500/30 border-t-violet-400" />
+          <img src="/mark.png" alt="" className="size-16 animate-pulse" />
           <p className="text-sm">يفتح الدعوة…</p>
         </motion.div>
       </main>

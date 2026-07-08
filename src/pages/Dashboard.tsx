@@ -153,7 +153,7 @@ export default function Dashboard() {
 
       {meetings.length === 0 && (
         <EmptyState
-          icon="📋"
+          icon={<img src="/mark.png" alt="" className="mx-auto size-16" />}
           title="لا توجد اجتماعات بعد"
           hint="أنشئ اجتماعك الأول واكتب بنوده في ثوانٍ."
         />

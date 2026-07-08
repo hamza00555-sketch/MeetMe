@@ -63,7 +63,8 @@ export default function SharedAgendaView({ payload, smoothScroll = false }: Prop
         const title = root.current!.querySelector('[data-hero-title]')
         const split = title ? new SplitText(title, { type: 'words' }) : null
         const tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
-        tl.from('[data-hero-kicker]', { y: 20, opacity: 0, duration: 0.55 })
+        tl.from('[data-hero-mark]', { y: 24, opacity: 0, scale: 0.85, duration: 0.6 })
+        tl.from('[data-hero-kicker]', { y: 20, opacity: 0, duration: 0.55 }, '-=0.3')
         if (split && split.words.length) {
           tl.from(
             split.words,
@@ -118,7 +119,7 @@ export default function SharedAgendaView({ payload, smoothScroll = false }: Prop
           // An animation failure must never hide the agenda — undo any
           // partially-applied tween state and show everything as-is.
           try {
-            gsap.set(root.current!.querySelectorAll('[data-hero-kicker],[data-hero-title],[data-hero-meta] > *,[data-hero-obj],[data-hero-hint],[data-item-body],[data-progress],[data-agenda-foot]'), { clearProps: 'all' })
+            gsap.set(root.current!.querySelectorAll('[data-hero-mark],[data-hero-kicker],[data-hero-title],[data-hero-meta] > *,[data-hero-obj],[data-hero-hint],[data-item-body],[data-progress],[data-agenda-foot]'), { clearProps: 'all' })
           } catch {
             /* leave the DOM untouched */
           }
@@ -139,6 +140,7 @@ export default function SharedAgendaView({ payload, smoothScroll = false }: Prop
     <div ref={root}>
       {/* Hero */}
       <section className="mx-auto flex min-h-[52dvh] max-w-2xl flex-col items-center justify-center px-6 pt-16 text-center">
+        <img data-hero-mark src="/mark.png" alt="" className="mb-5 size-16 drop-shadow-[0_10px_30px_rgba(125,240,255,0.25)]" />
         <p data-hero-kicker className="chip mb-5 !border-violet-500/30 text-violet-400">
           دعوة إلى اجتماع
         </p>
