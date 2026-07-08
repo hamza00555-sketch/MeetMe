@@ -67,8 +67,8 @@ export default function Dashboard() {
           <p className="text-sm text-mist-500">
             {new Intl.DateTimeFormat('ar', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())}
           </p>
-          <h1 className="mt-1 text-3xl font-bold sm:text-4xl">
-            <span className="grad-text">لقاء</span>
+          <h1 className="mt-1">
+            <img src="/logo.png" alt="لقاء" className="h-14 w-auto sm:h-16" />
           </h1>
         </div>
         <SaveIndicator />
